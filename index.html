@@ -159,26 +159,34 @@
     // "Hayır" butonu güvenli alanın içinde rastgele bir yere kayarak kaçar
     function dodge() {
       makeFixed();
-      const margin = 16;
       const w = noBtn.offsetWidth;
       const h = noBtn.offsetHeight;
 
-      // Gerçek görünür alanı al (mobilde adres çubuğunu da hesaba katar)
+      // En güvenli (en küçük) görünür alan ölçüsünü kullan
       const vv = window.visualViewport;
-      const vw = vv ? vv.width : window.innerWidth;
-      const vh = vv ? vv.height : window.innerHeight;
-      const offX = vv ? vv.offsetLeft : 0;
-      const offY = vv ? vv.offsetTop : 0;
+      const vw = Math.min(
+        window.innerWidth,
+        document.documentElement.clientWidth || window.innerWidth,
+        vv ? vv.width : Infinity
+      );
+      const vh = Math.min(
+        window.innerHeight,
+        document.documentElement.clientHeight || window.innerHeight,
+        vv ? vv.height : Infinity
+      );
 
-      // İzin verilen aralık: kenarlardan margin kadar içeride, buton tamamen görünür
-      const minX = offX + margin;
-      const minY = offY + margin;
-      const maxX = offX + vw - w - margin;
-      const maxY = offY + vh - h - margin;
+      // Oyun alanını daralt: kenarlardan %10, altta ekstra pay bırak
+      const insetX = vw * 0.10;
+      const insetTop = vh * 0.10;
+      const insetBottom = vh * 0.18; // alt çubuk vb. için fazladan boşluk
 
-      // Alan butondan küçükse ortala, değilse rastgele bir nokta seç
-      const x = maxX > minX ? Math.random() * (maxX - minX) + minX : (offX + (vw - w) / 2);
-      const y = maxY > minY ? Math.random() * (maxY - minY) + minY : (offY + (vh - h) / 2);
+      const minX = insetX;
+      const maxX = vw - w - insetX;
+      const minY = insetTop;
+      const maxY = vh - h - insetBottom;
+
+      const x = maxX > minX ? Math.random() * (maxX - minX) + minX : (vw - w) / 2;
+      const y = maxY > minY ? Math.random() * (maxY - minY) + minY : (vh - h) / 2;
 
       noBtn.style.left = x + "px";
       noBtn.style.top = y + "px";
