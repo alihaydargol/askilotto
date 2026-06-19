@@ -77,7 +77,9 @@
     .no.runaway {
       position: fixed;
       z-index: 3;
-      transition: left 0.2s ease, top 0.2s ease, transform 0.15s ease;
+      /* baslangicta hizli, sonunda yavaslayan yumusak kayma (ease-out) */
+      transition: left 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                  top 0.55s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .result {
@@ -142,14 +144,29 @@
     const question = document.getElementById("question");
     const result = document.getElementById("result");
 
-    // "Hayır" butonu ekranda rastgele bir yere kaçar (basılamaz)
-    function dodge() {
+    // İlk kaçıştan önce butonu bulunduğu yere sabitle ki oradan
+    // ışınlanmadan, yumuşak bir şekilde kaysın
+    function makeFixed() {
+      if (noBtn.classList.contains("runaway")) return;
+      const rect = noBtn.getBoundingClientRect();
+      noBtn.style.left = rect.left + "px";
+      noBtn.style.top = rect.top + "px";
+      // tarayıcı başlangıç konumunu görsün diye bir kare bekle
+      noBtn.offsetWidth;
       noBtn.classList.add("runaway");
-      const padding = 16;
-      const maxX = window.innerWidth - noBtn.offsetWidth - padding;
-      const maxY = window.innerHeight - noBtn.offsetHeight - padding;
-      const x = Math.random() * maxX + padding / 2;
-      const y = Math.random() * maxY + padding / 2;
+    }
+
+    // "Hayır" butonu ekranda rastgele bir yere kayarak kaçar (basılamaz)
+    function dodge() {
+      makeFixed();
+      const margin = 12;
+      const w = noBtn.offsetWidth;
+      const h = noBtn.offsetHeight;
+      // Buton hiçbir zaman ekran dışına taşmaz: 0..(ekran - buton - kenar)
+      const maxX = Math.max(margin, window.innerWidth - w - margin);
+      const maxY = Math.max(margin, window.innerHeight - h - margin);
+      const x = Math.min(maxX, Math.max(margin, Math.random() * (maxX - margin) + margin));
+      const y = Math.min(maxY, Math.max(margin, Math.random() * (maxY - margin) + margin));
       noBtn.style.left = x + "px";
       noBtn.style.top = y + "px";
     }
@@ -160,7 +177,7 @@
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-      if (dist < 110) dodge();
+      if (dist < 120) dodge();
     });
 
     // Dokunmatik ekranlarda dokununca kaçar
