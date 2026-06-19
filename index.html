@@ -164,8 +164,8 @@
       const w = noBtn.offsetWidth || 120;
       const h = noBtn.offsetHeight || 50;
 
-      // En güvenli (en küçük) görünür alan ölçüsü
       const vv = window.visualViewport;
+      // Görünür alanın gerçek genişlik/yüksekliği (en küçük = en güvenli)
       const vw = Math.min(
         window.innerWidth,
         document.documentElement.clientWidth || window.innerWidth,
@@ -176,20 +176,28 @@
         document.documentElement.clientHeight || window.innerHeight,
         vv ? vv.height : Infinity
       );
+      // Görünür alanın üst başlangıcı (mobilde kaydırma olursa)
+      const visTop = vv ? vv.offsetTop : 0;
+      const visLeft = vv ? vv.offsetLeft : 0;
 
-      // Dar bir güvenli kutu: yanlarda %12, üstte %12, altta %22 boşluk
-      const insetX = vw * 0.12;
-      const insetTop = vh * 0.12;
-      const insetBottom = vh * 0.22;
+      // Yatay boşluk
+      const insetX = Math.max(16, vw * 0.10);
 
-      let minX = insetX;
-      let maxX = vw - w - insetX;
-      let minY = insetTop;
-      let maxY = vh - h - insetBottom;
+      // ALT SINIR: butonun alt kenarı bu çizginin altına ASLA inemez.
+      // Görünür alanın altından %20 + 24px güvenlik payı bırak.
+      const bottomLimit = visTop + vh - Math.max(24, vh * 0.20);
+      // ÜST SINIR
+      const topLimit = visTop + Math.max(16, vh * 0.10);
 
-      // Alan ters dönerse (çok küçük ekran) butonu ortala
-      if (maxX < minX) { minX = maxX = (vw - w) / 2; }
-      if (maxY < minY) { minY = maxY = (vh - h) / 2; }
+      let minX = visLeft + insetX;
+      let maxX = visLeft + vw - w - insetX;
+      let minY = topLimit;
+      // Buton alt kenarı = top + h <= bottomLimit  =>  top <= bottomLimit - h
+      let maxY = bottomLimit - h;
+
+      // Alan ters dönerse (çok küçük ekran) ortala
+      if (maxX < minX) { minX = maxX = visLeft + (vw - w) / 2; }
+      if (maxY < minY) { minY = maxY = visTop + (vh - h) / 2; }
 
       area = { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
     }
@@ -208,6 +216,27 @@
       noBtn.style.left = clamp(x, area.minX, area.maxX) + "px";
       noBtn.style.top = clamp(y, area.minY, area.maxY) + "px";
     }
+
+    // Güvenlik ağı: hareket bitince gerçek konumu ölç, taşarsa içeri çek
+    function clampIntoView() {
+      const vv = window.visualViewport;
+      const vw = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth, vv ? vv.width : Infinity);
+      const vh = Math.min(window.innerHeight, document.documentElement.clientHeight || window.innerHeight, vv ? vv.height : Infinity);
+      const visTop = vv ? vv.offsetTop : 0;
+      const visLeft = vv ? vv.offsetLeft : 0;
+      const m = 12;
+      const rect = noBtn.getBoundingClientRect();
+      let left = parseFloat(noBtn.style.left) || rect.left;
+      let top = parseFloat(noBtn.style.top) || rect.top;
+      // Alt kenar görünür alanı geçtiyse yukarı çek
+      if (rect.bottom > visTop + vh - m) top -= (rect.bottom - (visTop + vh - m));
+      if (rect.top < visTop + m) top += (visTop + m - rect.top);
+      if (rect.right > visLeft + vw - m) left -= (rect.right - (visLeft + vw - m));
+      if (rect.left < visLeft + m) left += (visLeft + m - rect.left);
+      noBtn.style.left = left + "px";
+      noBtn.style.top = top + "px";
+    }
+    noBtn.addEventListener("transitionend", clampIntoView);
 
     // Alanı yükleme ve boyut değişimlerinde hesapla
     window.addEventListener("load", computeArea);
