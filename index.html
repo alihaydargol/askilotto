@@ -156,17 +156,30 @@
       noBtn.classList.add("runaway");
     }
 
-    // "Hayır" butonu ekranda rastgele bir yere kayarak kaçar (basılamaz)
+    // "Hayır" butonu güvenli alanın içinde rastgele bir yere kayarak kaçar
     function dodge() {
       makeFixed();
-      const margin = 12;
+      const margin = 16;
       const w = noBtn.offsetWidth;
       const h = noBtn.offsetHeight;
-      // Buton hiçbir zaman ekran dışına taşmaz: 0..(ekran - buton - kenar)
-      const maxX = Math.max(margin, window.innerWidth - w - margin);
-      const maxY = Math.max(margin, window.innerHeight - h - margin);
-      const x = Math.min(maxX, Math.max(margin, Math.random() * (maxX - margin) + margin));
-      const y = Math.min(maxY, Math.max(margin, Math.random() * (maxY - margin) + margin));
+
+      // Gerçek görünür alanı al (mobilde adres çubuğunu da hesaba katar)
+      const vv = window.visualViewport;
+      const vw = vv ? vv.width : window.innerWidth;
+      const vh = vv ? vv.height : window.innerHeight;
+      const offX = vv ? vv.offsetLeft : 0;
+      const offY = vv ? vv.offsetTop : 0;
+
+      // İzin verilen aralık: kenarlardan margin kadar içeride, buton tamamen görünür
+      const minX = offX + margin;
+      const minY = offY + margin;
+      const maxX = offX + vw - w - margin;
+      const maxY = offY + vh - h - margin;
+
+      // Alan butondan küçükse ortala, değilse rastgele bir nokta seç
+      const x = maxX > minX ? Math.random() * (maxX - minX) + minX : (offX + (vw - w) / 2);
+      const y = maxY > minY ? Math.random() * (maxY - minY) + minY : (offY + (vh - h) / 2);
+
       noBtn.style.left = x + "px";
       noBtn.style.top = y + "px";
     }
