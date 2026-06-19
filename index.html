@@ -136,7 +136,7 @@
   </style>
 </head>
 <body>
-  <div class="version">v9</div>
+  <div class="version">v10</div>
   <div class="card">
     <div id="question">
       <h1>Beni seviyor musun? 💗</h1>
@@ -256,6 +256,8 @@
     // "Evet" -> kalpler saçılır ve sonuç gösterilir
     yesBtn.addEventListener("click", function () {
       question.style.display = "none";
+      // Buton body'ye taşınmış olabilir; onu da gizle
+      noBtn.style.display = "none";
       result.style.display = "flex";
       rainHearts();
     });
