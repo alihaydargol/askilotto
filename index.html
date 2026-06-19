@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Beni Seviyor musun?</title>
   <style>
     * {
@@ -120,9 +123,20 @@
         opacity: 0;
       }
     }
+
+    .version {
+      position: fixed;
+      top: 6px;
+      left: 8px;
+      font-size: 0.7rem;
+      color: rgba(0, 0, 0, 0.35);
+      z-index: 5;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+  <div class="version">v7</div>
   <div class="card">
     <div id="question">
       <h1>Beni seviyor musun? 💗</h1>
@@ -181,13 +195,13 @@
       const visLeft = vv ? vv.offsetLeft : 0;
 
       // Yatay boşluk
-      const insetX = Math.max(16, vw * 0.10);
+      const insetX = Math.max(16, vw * 0.08);
 
-      // ALT SINIR: butonun alt kenarı bu çizginin altına ASLA inemez.
-      // Görünür alanın altından %20 + 24px güvenlik payı bırak.
-      const bottomLimit = visTop + vh - Math.max(24, vh * 0.20);
+      // ALT SINIR: butonun alt kenarı görünür alanın %70'ini geçemez.
+      // Yani alttaki %30'luk şerit (adres çubuğu + jest çubuğu) tamamen yasak.
+      const bottomLimit = visTop + vh * 0.70;
       // ÜST SINIR
-      const topLimit = visTop + Math.max(16, vh * 0.10);
+      const topLimit = visTop + Math.max(12, vh * 0.06);
 
       let minX = visLeft + insetX;
       let maxX = visLeft + vw - w - insetX;
@@ -225,11 +239,12 @@
       const visTop = vv ? vv.offsetTop : 0;
       const visLeft = vv ? vv.offsetLeft : 0;
       const m = 12;
+      const bottomLimit = visTop + vh * 0.70; // alt %30 yasak
       const rect = noBtn.getBoundingClientRect();
       let left = parseFloat(noBtn.style.left) || rect.left;
       let top = parseFloat(noBtn.style.top) || rect.top;
-      // Alt kenar görünür alanı geçtiyse yukarı çek
-      if (rect.bottom > visTop + vh - m) top -= (rect.bottom - (visTop + vh - m));
+      // Alt kenar %70 çizgisini geçtiyse yukarı çek
+      if (rect.bottom > bottomLimit) top -= (rect.bottom - bottomLimit);
       if (rect.top < visTop + m) top += (visTop + m - rect.top);
       if (rect.right > visLeft + vw - m) left -= (rect.right - (visLeft + vw - m));
       if (rect.left < visLeft + m) left += (visLeft + m - rect.left);
