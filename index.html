@@ -156,13 +156,15 @@
       noBtn.classList.add("runaway");
     }
 
-    // "Hayır" butonu güvenli alanın içinde rastgele bir yere kayarak kaçar
-    function dodge() {
-      makeFixed();
-      const w = noBtn.offsetWidth;
-      const h = noBtn.offsetHeight;
+    // Hayır butonunun gezebileceği sabit güvenli kutu.
+    // Sayfa yüklendiğinde ve ekran boyutu değiştiğinde bir kez hesaplanır.
+    let area = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
 
-      // En güvenli (en küçük) görünür alan ölçüsünü kullan
+    function computeArea() {
+      const w = noBtn.offsetWidth || 120;
+      const h = noBtn.offsetHeight || 50;
+
+      // En güvenli (en küçük) görünür alan ölçüsü
       const vv = window.visualViewport;
       const vw = Math.min(
         window.innerWidth,
@@ -175,22 +177,46 @@
         vv ? vv.height : Infinity
       );
 
-      // Oyun alanını daralt: kenarlardan %10, altta ekstra pay bırak
-      const insetX = vw * 0.10;
-      const insetTop = vh * 0.10;
-      const insetBottom = vh * 0.18; // alt çubuk vb. için fazladan boşluk
+      // Dar bir güvenli kutu: yanlarda %12, üstte %12, altta %22 boşluk
+      const insetX = vw * 0.12;
+      const insetTop = vh * 0.12;
+      const insetBottom = vh * 0.22;
 
-      const minX = insetX;
-      const maxX = vw - w - insetX;
-      const minY = insetTop;
-      const maxY = vh - h - insetBottom;
+      let minX = insetX;
+      let maxX = vw - w - insetX;
+      let minY = insetTop;
+      let maxY = vh - h - insetBottom;
 
-      const x = maxX > minX ? Math.random() * (maxX - minX) + minX : (vw - w) / 2;
-      const y = maxY > minY ? Math.random() * (maxY - minY) + minY : (vh - h) / 2;
+      // Alan ters dönerse (çok küçük ekran) butonu ortala
+      if (maxX < minX) { minX = maxX = (vw - w) / 2; }
+      if (maxY < minY) { minY = maxY = (vh - h) / 2; }
 
-      noBtn.style.left = x + "px";
-      noBtn.style.top = y + "px";
+      area = { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
     }
+
+    // İki sayı arasına sıkıştır (kelepçe)
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    // "Hayır" butonu yalnızca güvenli kutu içinde rastgele bir yere kayar
+    function dodge() {
+      makeFixed();
+      const x = Math.random() * (area.maxX - area.minX) + area.minX;
+      const y = Math.random() * (area.maxY - area.minY) + area.minY;
+      // Kesin güvenlik: sınırların dışına asla yazma
+      noBtn.style.left = clamp(x, area.minX, area.maxX) + "px";
+      noBtn.style.top = clamp(y, area.minY, area.maxY) + "px";
+    }
+
+    // Alanı yükleme ve boyut değişimlerinde hesapla
+    window.addEventListener("load", computeArea);
+    window.addEventListener("resize", computeArea);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", computeArea);
+      window.visualViewport.addEventListener("scroll", computeArea);
+    }
+    computeArea();
 
     // Fare butona yaklaşınca bile kaçsın - tıklayamadan kaçar
     document.addEventListener("mousemove", function (e) {
