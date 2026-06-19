@@ -136,7 +136,7 @@
   </style>
 </head>
 <body>
-  <div class="version">v7</div>
+  <div class="version">v8</div>
   <div class="card">
     <div id="question">
       <h1>Beni seviyor musun? 💗</h1>
@@ -158,11 +158,15 @@
     const question = document.getElementById("question");
     const result = document.getElementById("result");
 
+    // Butonun sayfa ilk yüklendiğindeki orijinal konumu (ilk kaçışta yakalanır)
+    let origin = null;
+
     // İlk kaçıştan önce butonu bulunduğu yere sabitle ki oradan
     // ışınlanmadan, yumuşak bir şekilde kaysın
     function makeFixed() {
       if (noBtn.classList.contains("runaway")) return;
       const rect = noBtn.getBoundingClientRect();
+      origin = { left: rect.left, top: rect.top };
       noBtn.style.left = rect.left + "px";
       noBtn.style.top = rect.top + "px";
       // tarayıcı başlangıç konumunu görsün diye bir kare bekle
@@ -170,16 +174,18 @@
       noBtn.classList.add("runaway");
     }
 
-    // Hayır butonunun gezebileceği sabit güvenli kutu.
-    // Sayfa yüklendiğinde ve ekran boyutu değiştiğinde bir kez hesaplanır.
-    let area = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    // İki sayı arasına sıkıştır (kelepçe)
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
 
-    function computeArea() {
-      const w = noBtn.offsetWidth || 120;
-      const h = noBtn.offsetHeight || 50;
+    // İzin verilen hareket sınırlarını hesapla
+    function getBounds() {
+      const w = noBtn.offsetWidth;
+      const h = noBtn.offsetHeight;
 
+      // En güvenli (en küçük) görünür alan ölçüsü
       const vv = window.visualViewport;
-      // Görünür alanın gerçek genişlik/yüksekliği (en küçük = en güvenli)
       const vw = Math.min(
         window.innerWidth,
         document.documentElement.clientWidth || window.innerWidth,
@@ -190,77 +196,38 @@
         document.documentElement.clientHeight || window.innerHeight,
         vv ? vv.height : Infinity
       );
-      // Görünür alanın üst başlangıcı (mobilde kaydırma olursa)
       const visTop = vv ? vv.offsetTop : 0;
       const visLeft = vv ? vv.offsetLeft : 0;
 
-      // Yatay boşluk
-      const insetX = Math.max(16, vw * 0.08);
+      // YATAY: en sol kenar ekranın soluna, en sağ kenar ekranın sağına gelebilir
+      let minX = visLeft;
+      let maxX = visLeft + vw - w;
 
-      // ALT SINIR: butonun alt kenarı görünür alanın %70'ini geçemez.
-      // Yani alttaki %30'luk şerit (adres çubuğu + jest çubuğu) tamamen yasak.
-      const bottomLimit = visTop + vh * 0.70;
-      // ÜST SINIR
-      const topLimit = visTop + Math.max(12, vh * 0.06);
+      // DİKEY: orijinalden en fazla 5 buton yukarı, 3 buton aşağı
+      let minY = origin.top - 5 * h;
+      let maxY = origin.top + 3 * h;
 
-      let minX = visLeft + insetX;
-      let maxX = visLeft + vw - w - insetX;
-      let minY = topLimit;
-      // Buton alt kenarı = top + h <= bottomLimit  =>  top <= bottomLimit - h
-      let maxY = bottomLimit - h;
+      // Hiçbir koşulda ekran dışına çıkma (üst/alt kelepçe)
+      minY = Math.max(visTop, minY);
+      maxY = Math.min(visTop + vh - h, maxY);
 
-      // Alan ters dönerse (çok küçük ekran) ortala
-      if (maxX < minX) { minX = maxX = visLeft + (vw - w) / 2; }
-      if (maxY < minY) { minY = maxY = visTop + (vh - h) / 2; }
+      // Aralık ters dönerse tek noktaya indir
+      if (maxX < minX) maxX = minX;
+      if (maxY < minY) maxY = minY;
 
-      area = { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
+      return { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
     }
 
-    // İki sayı arasına sıkıştır (kelepçe)
-    function clamp(v, lo, hi) {
-      return Math.max(lo, Math.min(hi, v));
-    }
-
-    // "Hayır" butonu yalnızca güvenli kutu içinde rastgele bir yere kayar
+    // "Hayır" butonu izin verilen sınırlar içinde rastgele bir yere kayar
     function dodge() {
       makeFixed();
-      const x = Math.random() * (area.maxX - area.minX) + area.minX;
-      const y = Math.random() * (area.maxY - area.minY) + area.minY;
+      const b = getBounds();
+      const x = b.minX + Math.random() * (b.maxX - b.minX);
+      const y = b.minY + Math.random() * (b.maxY - b.minY);
       // Kesin güvenlik: sınırların dışına asla yazma
-      noBtn.style.left = clamp(x, area.minX, area.maxX) + "px";
-      noBtn.style.top = clamp(y, area.minY, area.maxY) + "px";
+      noBtn.style.left = clamp(x, b.minX, b.maxX) + "px";
+      noBtn.style.top = clamp(y, b.minY, b.maxY) + "px";
     }
-
-    // Güvenlik ağı: hareket bitince gerçek konumu ölç, taşarsa içeri çek
-    function clampIntoView() {
-      const vv = window.visualViewport;
-      const vw = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth, vv ? vv.width : Infinity);
-      const vh = Math.min(window.innerHeight, document.documentElement.clientHeight || window.innerHeight, vv ? vv.height : Infinity);
-      const visTop = vv ? vv.offsetTop : 0;
-      const visLeft = vv ? vv.offsetLeft : 0;
-      const m = 12;
-      const bottomLimit = visTop + vh * 0.70; // alt %30 yasak
-      const rect = noBtn.getBoundingClientRect();
-      let left = parseFloat(noBtn.style.left) || rect.left;
-      let top = parseFloat(noBtn.style.top) || rect.top;
-      // Alt kenar %70 çizgisini geçtiyse yukarı çek
-      if (rect.bottom > bottomLimit) top -= (rect.bottom - bottomLimit);
-      if (rect.top < visTop + m) top += (visTop + m - rect.top);
-      if (rect.right > visLeft + vw - m) left -= (rect.right - (visLeft + vw - m));
-      if (rect.left < visLeft + m) left += (visLeft + m - rect.left);
-      noBtn.style.left = left + "px";
-      noBtn.style.top = top + "px";
-    }
-    noBtn.addEventListener("transitionend", clampIntoView);
-
-    // Alanı yükleme ve boyut değişimlerinde hesapla
-    window.addEventListener("load", computeArea);
-    window.addEventListener("resize", computeArea);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", computeArea);
-      window.visualViewport.addEventListener("scroll", computeArea);
-    }
-    computeArea();
 
     // Fare butona yaklaşınca bile kaçsın - tıklayamadan kaçar
     document.addEventListener("mousemove", function (e) {
