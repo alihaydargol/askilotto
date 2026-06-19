@@ -136,7 +136,7 @@
   </style>
 </head>
 <body>
-  <div class="version">v8</div>
+  <div class="version">v9</div>
   <div class="card">
     <div id="question">
       <h1>Beni seviyor musun? 💗</h1>
@@ -161,17 +161,20 @@
     // Butonun sayfa ilk yüklendiğindeki orijinal konumu (ilk kaçışta yakalanır)
     let origin = null;
 
-    // İlk kaçıştan önce butonu bulunduğu yere sabitle ki oradan
-    // ışınlanmadan, yumuşak bir şekilde kaysın
+    // İlk kaçıştan önce butonu bulunduğu yere sabitle.
+    // ÖNEMLİ: kartın backdrop-filter'i, içindeki fixed öğenin referansını
+    // viewport yerine karta çevirir. Bu yüzden butonu doğrudan <body>'ye
+    // taşıyoruz ki fixed konumlandırma gerçekten viewport'a göre olsun.
     function makeFixed() {
       if (noBtn.classList.contains("runaway")) return;
       const rect = noBtn.getBoundingClientRect();
       origin = { left: rect.left, top: rect.top };
       noBtn.style.left = rect.left + "px";
       noBtn.style.top = rect.top + "px";
+      noBtn.classList.add("runaway");
+      document.body.appendChild(noBtn); // karttan çıkar, viewport referansı
       // tarayıcı başlangıç konumunu görsün diye bir kare bekle
       noBtn.offsetWidth;
-      noBtn.classList.add("runaway");
     }
 
     // İki sayı arasına sıkıştır (kelepçe)
